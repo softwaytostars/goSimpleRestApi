@@ -48,9 +48,10 @@ func (resource ResourceDocument) getDocument(c *gin.Context) {
 // endpoint to create or update a document
 func (resource ResourceDocument) createOrUpdateDocument(c *gin.Context) {
 	id := c.Param("id")
+
 	err := resource.validationID(id)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Cannot create or update document [err=%s]", err)})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Validation failed [err=%s]", err)})
 		return
 	}
 
@@ -80,14 +81,16 @@ func (resource ResourceDocument) deleteDocument(c *gin.Context) {
 
 	err := resource.validationID(idToDelete)
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Cannot delete document [err=%s]", err)})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Validation failed [err=%s]", err)})
 		return
 	}
+
 	found, err := resource.documentService.Delete(idToDelete)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Cannot delete documents [err=%s]", err)})
 		return
 	}
+
 	if !found {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": fmt.Sprintf("document id %s not found", idToDelete)})
 		return

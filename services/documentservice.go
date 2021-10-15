@@ -3,6 +3,7 @@ package services
 import (
 	"goapi/models"
 	"log"
+	"sort"
 )
 
 type DocumentService interface {
@@ -12,6 +13,7 @@ type DocumentService interface {
 	Delete(id string) (bool, error)
 }
 
+// DocumentServiceImpl Default implementation for DocumentService
 type DocumentServiceImpl struct {
 	documentsById map[string]models.Document
 }
@@ -29,12 +31,21 @@ func (s DocumentServiceImpl) Get(id string) (models.Document, error) {
 	return models.Document{}, nil
 }
 
-// GetAll return all documents
+// GetAll return all documents sorted by ID
 func (s DocumentServiceImpl) GetAll() ([]models.Document, error) {
-	values := make([]models.Document, 0, len(s.documentsById))
-	for _, doc := range s.documentsById {
-		values = append(values, doc)
+	//retrieve ids and sort them
+	ids := make([]string, 0, len(s.documentsById))
+	for id := range s.documentsById {
+		ids = append(ids, id)
 	}
+	sort.Strings(ids)
+
+	//fill values for sorted ids
+	values := make([]models.Document, 0, len(s.documentsById))
+	for _, id := range ids {
+		values = append(values, s.documentsById[id])
+	}
+
 	return values, nil
 }
 

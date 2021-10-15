@@ -329,7 +329,7 @@ func TestResourceDocument_createOrUpdateDocumentWrongID(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Couldn't create request: %v", err))
 
 	//check result
-	var expectedError = `{"message":"Cannot create or update document [err=id must be defined]"}`
+	var expectedError = `{"message":"Validation failed [err=id must be defined]"}`
 	executeRequest(t, client, req, documentServiceMock, expectedError, http.StatusBadRequest)
 }
 
@@ -390,7 +390,7 @@ func TestResourceDocument_deleteDocumentsWrongID(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Couldn't create request: %v", err))
 
 	//check result
-	var expectedError = `{"message":"Cannot delete document [err=id must be defined]"}`
+	var expectedError = `{"message":"Validation failed [err=id must be defined]"}`
 	executeRequest(t, client, req, documentServiceMock, expectedError, http.StatusBadRequest)
 }
 

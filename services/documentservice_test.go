@@ -65,12 +65,18 @@ func TestDocumentServiceImpl_GetNotFound(t *testing.T) {
 
 func TestDocumentServiceImpl_GetAll(t *testing.T) {
 	documentServiceImpl := NewDocumentServiceImpl()
-	doc := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
-	documentServiceImpl.documentsById["toto"] = doc
+
+	docToto := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
+	documentServiceImpl.documentsById[docToto.ID] = docToto
+
+	docTata := models.Document{ID: "tata", Description: "descTata", Name: "nameTata"}
+	documentServiceImpl.documentsById[docTata.ID] = docTata
+
 	res, err := documentServiceImpl.GetAll()
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(res))
-	assert.Equal(t, doc, res[0])
+	assert.Equal(t, 2, len(res))
+	assert.Equal(t, docTata, res[0]) //values should be sorted by ID
+	assert.Equal(t, docToto, res[1])
 }
 
 func TestNewDocumentServiceImpl(t *testing.T) {
