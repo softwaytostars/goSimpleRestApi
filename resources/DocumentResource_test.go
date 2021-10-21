@@ -99,7 +99,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_getAllDocuments() {
 		},
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("GetAll").Return(expected, nil)
 
 	//create request
@@ -126,7 +126,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_getAllDocumentsErro
 		},
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("GetAll").Return(expected, errors.New("error_service_getAll"))
 
 	//create request
@@ -146,7 +146,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_getDocumentOK() {
 		Description: "descOfToto",
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Get", "toto").Return(expected, nil)
 
 	//create request should be OK
@@ -160,7 +160,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_getDocumentOK() {
 
 func (suite *DocumentResourceTestSuite) TestResourceDocument_getDocumentErrorService() {
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Get", "toto").Return(models.Document{}, errors.New("error_service_get"))
 
 	//create the request
@@ -174,7 +174,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_getDocumentErrorSer
 
 func (suite *DocumentResourceTestSuite) TestResourceDocument_getDocumentNotFound() {
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Get", "toto").Return(models.Document{}, nil)
 
 	//create the request
@@ -194,7 +194,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_createOrUpdateDocum
 		Description: "descOfToto",
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("CreateOrUpdate", expected).Return(false, nil)
 
 	//create request
@@ -214,7 +214,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_createOrUpdateDocum
 		Description: "descOfToto",
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("CreateOrUpdate", expected).Return(true, nil)
 
 	//create request
@@ -235,7 +235,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_createOrUpdateDocum
 		Description: "descOfToto",
 	}
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("CreateOrUpdate", expected).Return(false, errors.New("error_service_create"))
 
 	//create request
@@ -272,7 +272,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_createOrUpdateDocum
 
 func (suite *DocumentResourceTestSuite) TestResourceDocument_deleteDocument() {
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Delete", "toto").Return(true, nil)
 
 	//create request
@@ -285,7 +285,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_deleteDocument() {
 
 func (suite *DocumentResourceTestSuite) TestResourceDocument_deleteDocumentErrorService() {
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Delete", "toto").Return(false, errors.New("error_service_delete"))
 
 	//create request
@@ -310,7 +310,7 @@ func (suite *DocumentResourceTestSuite) TestResourceDocument_deleteDocumentsWron
 
 func (suite *DocumentResourceTestSuite) TestResourceDocument_deleteDocumentNotFound() {
 
-	//add handler mock service(suite.T(),
+	//add handler mock service
 	suite.documentServiceMock.On("Delete", "toto").Return(false, nil)
 
 	//create request
