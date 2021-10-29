@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"goapi/config"
 	"goapi/resources"
@@ -13,6 +14,12 @@ import (
 
 func configureRouter() *gin.Engine {
 	router := gin.Default()
+	configCors := cors.DefaultConfig()
+	configCors.AllowOrigins = []string{"*"}
+	configCors.AllowHeaders = []string{"*"}
+	configCors.AllowCredentials = true
+	router.Use(cors.New(configCors))
+
 	resources.RegisterHandlers(router, services.NewDocumentServiceImpl())
 	return router
 }
