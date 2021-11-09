@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/swag/example/celler/httputil"
 	"goapi/models"
 	"goapi/services"
 	"net/http"
@@ -20,8 +21,14 @@ func (resource ResourceDocument) validationID(id string) error {
 	return nil
 }
 
-//endpoint to retrieve all documents
-func (resource ResourceDocument) getAllDocuments(c *gin.Context) {
+// Endpoint to retrieve all documents
+// @Summary Retrieve all documents
+// @Description Retrieve all documents
+// @Produce  json
+// @Success 200 {array} models.Document
+// @Failure 500 {object} httputil.HTTPError
+// @Router /documents [get]
+func (resource ResourceDocument) GetAllDocuments(c *gin.Context) {
 	docs, err := resource.documentService.GetAll()
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Cannot get documents [err=%s]", err)})
@@ -30,8 +37,16 @@ func (resource ResourceDocument) getAllDocuments(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, docs)
 }
 
-//endpoint to retrieve a given document from the path param id
-func (resource ResourceDocument) getDocument(c *gin.Context) {
+// Endpoint to retrieve a given document from the path param id
+// @Summary Retrieve a given document
+// @Description Retrieve  a given document from the path param id
+// @Produce  json
+// @Param id path int true "Document ID"
+// @Success 200 {object} models.Document
+// @Failure 500 {object} httputil.HTTPError
+// @Failure 404 {object} httputil.HTTPError
+// @Router /documents/{id} [get]
+func (resource ResourceDocument) GetDocument(c *gin.Context) {
 	id := c.Param("id")
 	doc, err := resource.documentService.Get(id)
 	if err != nil {
@@ -45,8 +60,20 @@ func (resource ResourceDocument) getDocument(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, doc)
 }
 
-// endpoint to create or update a document
-func (resource ResourceDocument) createOrUpdateDocument(c *gin.Context) {
+// Endpoint to create or update a document
+// @Summary Create or update a document
+// @Description Create or update a document
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Document ID"
+// @Param data body models.Document true "The document struct"
+// @Success 200 {object} models.Document "update"
+// @Success 201 {object} models.Document "creation"
+// @Failure 500 {object} httputil.HTTPError
+// @Failure 400 {object} httputil.HTTPError
+// @Failure 404 {object} httputil.HTTPError
+// @Router /documents/{id} [put]
+func (resource ResourceDocument) CreateOrUpdateDocument(c *gin.Context) {
 	id := c.Param("id")
 
 	err := resource.validationID(id)
@@ -75,8 +102,16 @@ func (resource ResourceDocument) createOrUpdateDocument(c *gin.Context) {
 	}
 }
 
-// endpoint to Delete a given document id
-func (resource ResourceDocument) deleteDocument(c *gin.Context) {
+// Endpoint to Delete a given document id
+// @Summary  Delete a given document id
+// @Description  Delete a given document id
+// @Param id path int true "Document ID"
+// @Success 200 "OK"
+// @Failure 500 {object} httputil.HTTPError
+// @Failure 400 {object} httputil.HTTPError
+// @Failure 404 {object} httputil.HTTPError
+// @Router /documents/{id} [delete]
+func (resource ResourceDocument) DeleteDocument(c *gin.Context) {
 	idToDelete := c.Param("id")
 
 	err := resource.validationID(idToDelete)
@@ -102,8 +137,8 @@ func (resource ResourceDocument) deleteDocument(c *gin.Context) {
 func RegisterHandlers(r *gin.Engine, documentService services.DocumentService) {
 	resource := ResourceDocument{documentService}
 
-	r.GET("/documents", resource.getAllDocuments)
-	r.GET("/documents/:id", resource.getDocument)
-	r.PUT("/documents/:id", resource.createOrUpdateDocument)
-	r.DELETE("/documents/:id", resource.deleteDocument)
+	r.GET("/documents", resource.GetAllDocuments)
+	r.GET("/documents/:id", resource.GetDocument)
+	r.PUT("/documents/:id", resource.CreateOrUpdateDocument)
+	r.DELETE("/documents/:id", resource.DeleteDocument)
 }

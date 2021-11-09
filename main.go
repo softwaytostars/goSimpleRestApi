@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/swaggo/files"       // swagger embed files
+	"github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"goapi/config"
+	_ "goapi/docs/resourcedocument"
 	"goapi/resources"
 	"goapi/services"
 	"gopkg.in/yaml.v2"
@@ -21,6 +24,10 @@ func configureRouter() *gin.Engine {
 	router.Use(cors.New(configCors))
 
 	resources.RegisterHandlers(router, services.NewDocumentServiceImpl())
+
+	// @title Swagger REST API Documentation
+	// @version 1.0
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return router
 }
 
