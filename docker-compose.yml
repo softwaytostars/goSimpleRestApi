@@ -1,0 +1,23 @@
+version: "3.7"
+services:
+  mongodb-server:
+    image: mongo:latest
+    volumes:
+      - 'mongodb-server-volume:/data/db'
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
+  api-server:
+    image: docker-app-test:latest
+    ports:
+      - '8040:8040'
+    environment:
+      MONGO_SERVER_HOST: mongodb-server
+      MONGO_SERVER_PORT: 27017
+      STORAGE_MEMORY: 'false'
+    depends_on:
+      - mongodb-server
+
+volumes:
+  mongodb-server-volume:
