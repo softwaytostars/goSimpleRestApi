@@ -3,16 +3,18 @@ package services
 import (
 	"github.com/stretchr/testify/assert"
 	"goapi/models"
+	"goapi/repositories"
 	"testing"
 )
 
 func TestDocumentServiceImpl_CreateOrUpdateWithCreation(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
 
 	updated, err := documentServiceImpl.CreateOrUpdate(models.Document{ID: "toto", Description: "descToto", Name: "nameToto"})
 	assert.Nil(t, err)
 	length := 0
-	documentServiceImpl.documentsById.Range(func(_, _ interface{}) bool {
+	repo.DocumentsById.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})
@@ -21,34 +23,38 @@ func TestDocumentServiceImpl_CreateOrUpdateWithCreation(t *testing.T) {
 }
 
 func TestDocumentServiceImpl_CreateOrUpdateWithUpdate(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	doc := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
-	documentServiceImpl.documentsById.Store("toto", doc)
+	repo.DocumentsById.Store("toto", doc)
 
 	docUpdate := models.Document{ID: doc.ID, Description: "descUpdateToto", Name: "nameUpdateToto"}
 	updated, err := documentServiceImpl.CreateOrUpdate(docUpdate)
 	assert.Nil(t, err)
 	length := 0
-	documentServiceImpl.documentsById.Range(func(_, _ interface{}) bool {
+	repo.DocumentsById.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})
 	assert.Equal(t, 1, length)
 	assert.True(t, updated)
-	docFound, _ := documentServiceImpl.documentsById.Load(doc.ID)
+	docFound, _ := repo.DocumentsById.Load(doc.ID)
 	assert.Equal(t, docFound.(models.Document), docUpdate)
 }
 
 func TestDocumentServiceImpl_DeleteExisting(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	doc := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
-	documentServiceImpl.documentsById.Store("toto", doc)
+	repo.DocumentsById.Store("toto", doc)
 
 	found, err := documentServiceImpl.Delete(doc.ID)
 	assert.Nil(t, err)
 	assert.True(t, found)
 	length := 0
-	documentServiceImpl.documentsById.Range(func(_, _ interface{}) bool {
+	repo.DocumentsById.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})
@@ -56,12 +62,14 @@ func TestDocumentServiceImpl_DeleteExisting(t *testing.T) {
 }
 
 func TestDocumentServiceImpl_DeleteNonExisting(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	found, err := documentServiceImpl.Delete("toto")
 	assert.Nil(t, err)
 	assert.False(t, found)
 	length := 0
-	documentServiceImpl.documentsById.Range(func(_, _ interface{}) bool {
+	repo.DocumentsById.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})
@@ -69,29 +77,34 @@ func TestDocumentServiceImpl_DeleteNonExisting(t *testing.T) {
 }
 
 func TestDocumentServiceImpl_GetFound(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	doc := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
-	documentServiceImpl.documentsById.Store("toto", doc)
+	repo.DocumentsById.Store("toto", doc)
 	res, err := documentServiceImpl.Get("toto")
 	assert.Nil(t, err)
 	assert.Equal(t, doc, res)
 }
 
 func TestDocumentServiceImpl_GetNotFound(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	res, err := documentServiceImpl.Get("toto")
 	assert.Nil(t, err)
 	assert.Equal(t, models.Document{}, res)
 }
 
 func TestDocumentServiceImpl_GetAll(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
 
 	docToto := models.Document{ID: "toto", Description: "descToto", Name: "nameToto"}
-	documentServiceImpl.documentsById.Store(docToto.ID, docToto)
+	repo.DocumentsById.Store(docToto.ID, docToto)
 
 	docTata := models.Document{ID: "tata", Description: "descTata", Name: "nameTata"}
-	documentServiceImpl.documentsById.Store(docTata.ID, docTata)
+	repo.DocumentsById.Store(docTata.ID, docTata)
 
 	res, err := documentServiceImpl.GetAll()
 	assert.Nil(t, err)
@@ -101,11 +114,13 @@ func TestDocumentServiceImpl_GetAll(t *testing.T) {
 }
 
 func TestNewDocumentServiceImpl(t *testing.T) {
-	documentServiceImpl := NewDocumentServiceImpl()
+	repo := repositories.InMemoryDocumentRepo{}
+	documentServiceImpl := NewDocumentServiceImpl(&repo)
+
 	assert.NotNil(t, documentServiceImpl)
-	assert.NotNil(t, &documentServiceImpl.documentsById)
+	assert.NotNil(t, &repo.DocumentsById)
 	length := 0
-	documentServiceImpl.documentsById.Range(func(_, _ interface{}) bool {
+	repo.DocumentsById.Range(func(_, _ interface{}) bool {
 		length++
 		return true
 	})

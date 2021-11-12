@@ -1,2 +1,7 @@
 server:
   port: 8040
+database:
+  uri: mongodb://{{ .MONGO_SERVER_HOST | default "localhost" }}:{{ .MONGO_SERVER_PORT | default "27017" }}
+  dbname: db-simple-test
+  maxPoolSize: 5
+storageInMemory: {{ .STORAGE_MEMORY | default "false" }}
