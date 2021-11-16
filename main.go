@@ -3,18 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"github.com/leekchan/gtf"
-	log "github.com/sirupsen/logrus"
-	"github.com/swaggo/files"       // swagger embed files
-	"github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"goapi/config"
+	"goapi/database"
 	_ "goapi/docs/resourcedocument"
 	"goapi/repositories"
 	"goapi/resources"
 	"goapi/services"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,6 +16,14 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/leekchan/gtf"
+	log "github.com/sirupsen/logrus"
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
+	"gopkg.in/yaml.v2"
 )
 
 func configureRouter(configuration *config.Config) *gin.Engine {
@@ -83,6 +85,11 @@ func main() {
 	//configure the router
 	router := configureRouter(configuration)
 
+	//Create a connection to DB if needed
+	if !configuration.StorageInMemory {
+		database.GetMongoDatabaseHandler().TryOrRetryCreateConnection(&configuration.DbConfig)
+	}
+
 	srv := &http.Server{
 		Addr:    ":" + configuration.ServerConfig.Port,
 		Handler: router,
@@ -116,5 +123,7 @@ func main() {
 }
 
 func stopEveryThing(configuration *config.Config) {
-	repositories.CloseRepositories(configuration)
+	if !configuration.StorageInMemory {
+		database.GetMongoDatabaseHandler().Close()
+	}
 }

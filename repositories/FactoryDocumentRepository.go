@@ -9,6 +9,6 @@ func CreateDocumentRepository(config *config.Config) DocumentRepository {
 	if config.StorageInMemory {
 		return &InMemoryDocumentRepo{}
 	} else {
-		return &MongoDbDocumentRepo{database.GetMongoDataStore(config.DbConfig)}
+		return NewMongoDbDocumentRepo(database.GetMongoDatabaseHandler())
 	}
 }

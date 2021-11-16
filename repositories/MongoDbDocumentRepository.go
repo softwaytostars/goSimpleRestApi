@@ -3,21 +3,36 @@ package repositories
 import (
 	"context"
 	"errors"
+	"goapi/database"
+	"goapi/models"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"goapi/database"
-	"goapi/models"
-	"time"
 )
 
-type MongoDbDocumentRepo struct {
+type mongoDbDocumentRepo struct {
 	store *database.MongoDatastore
 }
 
-func (r *MongoDbDocumentRepo) GetById(id string) (models.Document, error) {
+//interface ObserverDatabase implementation
+func (r *mongoDbDocumentRepo) SetDataStore(dataStore *database.MongoDatastore) {
+	r.store = dataStore
+}
+
+func NewMongoDbDocumentRepo(databaseHandler *database.MongoDataBaseHandler) *mongoDbDocumentRepo {
+	repo := &mongoDbDocumentRepo{}
+	repo.store = databaseHandler.GetDataStore()
+	if repo.store == nil {
+		databaseHandler.RegisterAsObserver(repo)
+	}
+	return repo
+}
+
+func (r *mongoDbDocumentRepo) GetById(id string) (models.Document, error) {
 	if r.store == nil {
 		log.Error("data store not available")
 		return models.Document{}, errors.New("no datastore")
@@ -42,7 +57,7 @@ func (r *MongoDbDocumentRepo) GetById(id string) (models.Document, error) {
 	return result, nil
 }
 
-func (r *MongoDbDocumentRepo) GetAll() ([]models.Document, error) {
+func (r *mongoDbDocumentRepo) GetAll() ([]models.Document, error) {
 	if r.store == nil {
 		log.Error("data store not available")
 		return nil, errors.New("no datastore")
@@ -88,7 +103,7 @@ func (r *MongoDbDocumentRepo) GetAll() ([]models.Document, error) {
 	return results, nil
 }
 
-func (r *MongoDbDocumentRepo) CreateOrUpdate(document models.Document) (bool, error) {
+func (r *mongoDbDocumentRepo) CreateOrUpdate(document models.Document) (bool, error) {
 	if r.store == nil {
 		log.Error("data store not available")
 		return false, errors.New("no datastore")
@@ -117,7 +132,7 @@ func (r *MongoDbDocumentRepo) CreateOrUpdate(document models.Document) (bool, er
 	return true, nil
 }
 
-func (r *MongoDbDocumentRepo) Delete(id string) (bool, error) {
+func (r *mongoDbDocumentRepo) Delete(id string) (bool, error) {
 	if r.store == nil {
 		log.Error("data store not available")
 		return false, errors.New("no datastore")
