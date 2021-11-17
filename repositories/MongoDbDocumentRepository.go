@@ -42,7 +42,7 @@ func (r *mongoDbDocumentRepo) GetById(id string) (models.Document, error) {
 	collection := r.store.Database.Collection(database.DocumentCollectionName)
 
 	//define filter
-	filter := bson.D{{"id", id}}
+	filter := bson.D{primitive.E{Key: "id", Value: id}}
 
 	var result models.Document
 	//search
@@ -70,7 +70,7 @@ func (r *mongoDbDocumentRepo) GetAll() ([]models.Document, error) {
 
 	findOptions := options.Find()
 	// Sort by `id` field ascending
-	findOptions.SetSort(bson.D{{"id", 1}})
+	findOptions.SetSort(bson.D{primitive.E{Key: "id", Value: 1}})
 
 	cur, err := collection.Find(ctx, bson.D{}, findOptions)
 
