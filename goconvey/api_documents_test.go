@@ -7,11 +7,20 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func getServerHost() string {
+	host := os.Getenv("SERVER_HOST")
+	if len(host) <= 0 {
+		host = "localhost"
+	}
+	return host
+}
 
 func doCall(method string, addr string, body io.Reader) *http.Response {
 
@@ -48,7 +57,7 @@ func TestApiDocument(t *testing.T) {
 	Convey("Given api server uses database and database is available", t, func() {
 		Convey("Then an empty document list should be available", func() {
 
-			resp := doCall("GET", "http://localhost:8040/documents", nil)
+			resp := doCall("GET", "http://"+getServerHost()+":8040/documents", nil)
 			defer resp.Body.Close()
 
 			bodyBytes := getBodyResponseFrom(resp)
@@ -63,13 +72,13 @@ func TestApiDocument(t *testing.T) {
 
 			postBody, _ := json.Marshal(models.Document{Name: "nametoto"})
 
-			resp := doCall("PUT", "http://localhost:8040/documents/toto", bytes.NewBuffer(postBody))
+			resp := doCall("PUT", "http://"+getServerHost()+":8040/documents/toto", bytes.NewBuffer(postBody))
 			So(resp.StatusCode, ShouldEqual, 201)
 			resp.Body.Close()
 
 			Convey("Then I can retrieve it with name nametoto", func() {
 
-				resp := doCall("GET", "http://localhost:8040/documents/toto", nil)
+				resp := doCall("GET", "http://"+getServerHost()+":8040/documents/toto", nil)
 				defer resp.Body.Close()
 
 				bodyBytes := getBodyResponseFrom(resp)
@@ -85,12 +94,12 @@ func TestApiDocument(t *testing.T) {
 
 			postBody, _ := json.Marshal(models.Document{Name: "nametoto2"})
 
-			resp := doCall("PUT", "http://localhost:8040/documents/toto", bytes.NewBuffer(postBody))
+			resp := doCall("PUT", "http://"+getServerHost()+":8040/documents/toto", bytes.NewBuffer(postBody))
 			So(resp.StatusCode, ShouldEqual, 200)
 			resp.Body.Close()
 
 			Convey("Then I can retrieve it with name nametoto2", func() {
-				resp := doCall("GET", "http://localhost:8040/documents/toto", nil)
+				resp := doCall("GET", "http://"+getServerHost()+":8040/documents/toto", nil)
 				defer resp.Body.Close()
 
 				bodyBytes := getBodyResponseFrom(resp)
@@ -103,7 +112,7 @@ func TestApiDocument(t *testing.T) {
 
 		Convey("When I look fors documents, I find only toto with name toto2", func() {
 
-			resp := doCall("GET", "http://localhost:8040/documents", nil)
+			resp := doCall("GET", "http://"+getServerHost()+":8040/documents", nil)
 			defer resp.Body.Close()
 
 			bodyBytes := getBodyResponseFrom(resp)
@@ -117,11 +126,11 @@ func TestApiDocument(t *testing.T) {
 
 		Convey("When I delete document id toto", func() {
 
-			resp := doCall("DELETE", "http://localhost:8040/documents/toto", nil)
+			resp := doCall("DELETE", "http://"+getServerHost()+":8040/documents/toto", nil)
 			defer resp.Body.Close()
 
 			Convey("Then the list of documents is empty", func() {
-				resp := doCall("GET", "http://localhost:8040/documents", nil)
+				resp := doCall("GET", "http://"+getServerHost()+":8040/documents", nil)
 				defer resp.Body.Close()
 
 				bodyBytes := getBodyResponseFrom(resp)

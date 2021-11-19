@@ -6,12 +6,12 @@
       && ln -s ${CI_PROJECT_DIR} ${PACKAGE_PATH}
       && cd ${PACKAGE_PATH}
 
-stages:          # List of stages for jobs, and their order of execution
+stages:      # List of stages for jobs, and their order of execution
   - unit-test
   - behavior-test
 
-unit-test-job:   # This job runs in the test stage.
-  stage: unit-test    # It only starts when the job in the build stage completes successfully.
+unit-test-job: 
+  stage: unit-test   
   image: golang:alpine
   before_script:
     - *inject-gopath
@@ -19,7 +19,7 @@ unit-test-job:   # This job runs in the test stage.
     - CGO_ENABLED=0 GOOS=linux go clean -testcache
     - CGO_ENABLED=0 GOOS=linux go test -v `go list ./... | grep -v goconvey`  -coverprofile .testCoverage.txt
 
-behavior-test-job:       # This job runs in the build stage, which runs first.
+behavior-test-job:     
   stage: behavior-test
   image: docker/compose:latest
   services:
@@ -30,5 +30,5 @@ behavior-test-job:       # This job runs in the build stage, which runs first.
   script:
     - docker build -t docker-app-test .
     - docker-compose up -d
-    - go test ./goconvey
+    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; go test ./goconvey"
     - docker-compose down
