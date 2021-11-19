@@ -7,6 +7,7 @@ import (
 	"goapi/models"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -72,7 +73,7 @@ func (r *mongoDbDocumentRepo) GetAll() ([]models.Document, error) {
 	// Sort by `id` field ascending
 	findOptions.SetSort(bson.D{primitive.E{Key: "id", Value: 1}})
 
-	cur, err := collection.Find(ctx, bson.D{}, findOptions)
+	cur, err := collection.Find(ctx, bson.D{{}}, findOptions)
 
 	if err != nil {
 		log.Error(err)
@@ -80,8 +81,8 @@ func (r *mongoDbDocumentRepo) GetAll() ([]models.Document, error) {
 	}
 	defer func(cursor *mongo.Cursor, ctxt *context.Context) {
 		err := cur.Close(ctx)
-		if err == nil {
-			log.Error("Cannot close context")
+		if err != nil {
+			log.Error("Cannot close context", err)
 		}
 	}(cur, &ctx)
 
@@ -116,20 +117,34 @@ func (r *mongoDbDocumentRepo) CreateOrUpdate(document models.Document) (bool, er
 	collection := r.store.Database.Collection(database.DocumentCollectionName)
 
 	//insert or update data
-	filter := bson.D{primitive.E{Key: "id", Value: document.ID}}
-	update := bson.M{
-		"$set": document,
-	}
-	res, err := collection.UpdateOne(ctx, filter, update)
-	if err != nil || res.MatchedCount <= 0 {
-		_, err = collection.InsertOne(ctx, document)
+	filter := bson.M{"id": document.ID}
+
+	pByte, err := bson.Marshal(document)
+	if err != nil {
+		logrus.Errorf("can't marshal:%s", err)
 	}
 
+	var update bson.M
+	err = bson.Unmarshal(pByte, &update)
 	if err != nil {
+		logrus.Errorf("can't unmarshal:%s", err)
+	}
+
+	// NOTE: filter and ctx(Context) should be already defined
+	res, err := collection.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: update}})
+
+	if err != nil {
+		logrus.Error(err.Error())
 		return false, err
 	}
 
-	return true, nil
+	if res.MatchedCount > 0 {
+		return true, err
+	}
+
+	_, err = collection.InsertOne(ctx, document)
+
+	return false, err
 }
 
 func (r *mongoDbDocumentRepo) Delete(id string) (bool, error) {
