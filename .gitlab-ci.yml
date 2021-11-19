@@ -30,5 +30,5 @@ behavior-test-job:
   script:
     - docker build -t docker-app-test .
     - docker-compose up -d
-    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; go test ./goconvey"
+    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; SERVER_HOST=api-server go test ./goconvey"
     - docker-compose down
