@@ -7,6 +7,8 @@ services:
     ports:
       - "27017:27017"
     restart: unless-stopped
+    networks:
+      go-ref-api:
 
   api-server:
     image: docker-app-test:latest
@@ -18,6 +20,11 @@ services:
       STORAGE_MEMORY: 'false'
     depends_on:
       - mongodb-server
+    networks:
+      go-ref-api:
 
 volumes:
   mongodb-server-volume:
+networks:
+      go-ref-api:  
+        name: "network-go-ref-api"

@@ -1,0 +1,34 @@
+
+  # A hack to make Golang-in-Gitlab happy
+.anchors:
+  - &inject-gopath
+      mkdir -p $(dirname ${PACKAGE_PATH})
+      && ln -s ${CI_PROJECT_DIR} ${PACKAGE_PATH}
+      && cd ${PACKAGE_PATH}
+
+stages:      # List of stages for jobs, and their order of execution
+  - unit-test
+  - behavior-test
+
+unit-test-job: 
+  stage: unit-test   
+  image: golang:alpine
+  before_script:
+    - *inject-gopath
+  script:
+    - CGO_ENABLED=0 GOOS=linux go clean -testcache
+    - CGO_ENABLED=0 GOOS=linux go test -v `go list ./... | grep -v goconvey`  -coverprofile .testCoverage.txt
+
+behavior-test-job:     
+  stage: behavior-test
+  image: docker/compose:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker info
+    - docker-compose --version
+  script:
+    - docker build -t docker-app-test .
+    - docker-compose up -d
+    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; SERVER_HOST=api-server go test ./goconvey"
+    - docker-compose down

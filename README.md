@@ -17,9 +17,6 @@ Thanks to the swaggo module, one can annotate the endpoints and generate swagger
 
 `swag init  --output docs/resourcedocument --parseInternal --parseDependency`
 
-## Run tests
-go test -v ./...
-
 ## Run application in local
 `go run main.go`
 
@@ -30,6 +27,20 @@ run `docker container run --rm -p 8040:8040  docker-app-test` for using an in me
 
 or run `docker-compose up` for using mongodb as datastore
 (you may need to create a docker network with `docker network create goapi_default --subnet 172.24.29.0/29` for example)
+
+## Run tests
+go test -v `go list ./... | grep -v goconvey` for running all tests except the ones in package goconvey.
+
+Indeed, they are behavior tests that need to be run against the server api.
+
+To run the behavior test, launch docker-compose , then
+
+`go test ./goconvey`
+
+## CI/CD
+
+The pipeline is run under gitlabci and the .gitlabci.yml is its configuration file.
+See gitlab/README.md
 
 ## Access to swagger api documentation
 
