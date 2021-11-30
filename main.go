@@ -6,9 +6,11 @@ import (
 	"goapi/config"
 	"goapi/database"
 	_ "goapi/docs/resourcedocument"
-	"goapi/repositories"
-	"goapi/resources"
-	"goapi/services"
+	"goapi/kafka"
+	"goapi/repositories/repodocuments"
+	"goapi/resources/documents"
+	"goapi/resources/emails"
+	"goapi/services/servicedocuments"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -35,7 +37,9 @@ func configureRouter(configuration *config.Config) *gin.Engine {
 	router.Use(cors.New(configCors))
 
 	//register document resource endpoints
-	resources.RegisterHandlers(router, services.NewDocumentServiceImpl(repositories.CreateDocumentRepository(configuration)))
+	documents.RegisterHandlers(router, servicedocuments.NewDocumentServiceImpl(repodocuments.CreateDocumentRepository(configuration)))
+	//register Email resource
+	emails.RegisterHandlers(router, configuration)
 
 	// @title Swagger REST API Documentation
 	// @version 1.0
@@ -45,15 +49,21 @@ func configureRouter(configuration *config.Config) *gin.Engine {
 
 func retrieveConfig() (*config.Config, error) {
 	//that's a pain in the ass, but the yaml module spec do not include the handling of env vars
-	//so use go template to parse the yaml configuration file, and inject the variable values
+	//so use go template module to parse the yaml configuration file, and inject the variable values
 	data := struct {
 		MONGO_SERVER_HOST string
 		MONGO_SERVER_PORT string
 		STORAGE_MEMORY    string
+		EMAIL_CONSUMERS   string
+		KAFKA_SERVER_HOST string
+		KAFKA_SERVER_PORT string
 	}{
 		MONGO_SERVER_HOST: os.Getenv("MONGO_SERVER_HOST"),
 		MONGO_SERVER_PORT: os.Getenv("MONGO_SERVER_PORT"),
 		STORAGE_MEMORY:    os.Getenv("STORAGE_MEMORY"),
+		EMAIL_CONSUMERS:   os.Getenv("EMAIL_CONSUMERS"),
+		KAFKA_SERVER_HOST: os.Getenv("KAFKA_SERVER_HOST"),
+		KAFKA_SERVER_PORT: os.Getenv("KAFKA_SERVER_PORT"),
 	}
 
 	fileData, _ := ioutil.ReadFile("config.yml")
@@ -85,10 +95,8 @@ func main() {
 	//configure the router
 	router := configureRouter(configuration)
 
-	//Create a connection to DB if needed
-	if !configuration.StorageInMemory {
-		database.GetMongoDatabaseHandler().TryOrRetryCreateConnection(&configuration.DbConfig)
-	}
+	//start everything
+	startEveryThing(configuration)
 
 	srv := &http.Server{
 		Addr:    ":" + configuration.ServerConfig.Port,
@@ -122,7 +130,20 @@ func main() {
 	log.Info("Server exiting")
 }
 
+func startEveryThing(configuration *config.Config) {
+	//Create a connection to DB if needed
+	if !configuration.StorageInMemory {
+		database.GetMongoDatabaseHandler().TryOrRetryCreateConnection(&configuration.DbConfig)
+	}
+	//start consumers
+	kafka.GetInstanceKafkaConsumers(&configuration.KafkaConfig).StartConsumers(1, kafka.EmailConsumer)
+
+}
+
 func stopEveryThing(configuration *config.Config) {
+	//stop consumers
+	kafka.GetInstanceKafkaConsumers(&configuration.KafkaConfig).StopConsumers(configuration.EmailConsumers, kafka.EmailConsumer)
+	//stop DB client
 	if !configuration.StorageInMemory {
 		database.GetMongoDatabaseHandler().Close()
 	}

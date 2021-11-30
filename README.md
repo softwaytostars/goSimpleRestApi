@@ -35,7 +35,7 @@ Indeed, they are behavior tests that need to be run against the server api.
 
 To run the behavior test, launch docker-compose , then
 
-`go test ./goconvey`
+`go test -v ./goconvey`
 
 ## CI/CD
 
@@ -62,3 +62,6 @@ The documentation is accessible at : http://localhost:8040/swagger/index.html
 
 ##### Delete a document given id
 `curl -X DELETE --include http://localhost:8040/documents/toto`
+
+##### Post messages to kafka broker
+`curl -X POST http://localhost:8040/emails`

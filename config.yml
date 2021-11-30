@@ -5,3 +5,6 @@ database:
   dbname: db-simple-test
   maxPoolSize: 5
 storageInMemory: {{ .STORAGE_MEMORY | default "false" }}
+nEmailConsumers: {{ .EMAIL_CONSUMERS | default "1" }}
+kafkaServer: 
+  uri: {{ .KAFKA_SERVER_HOST | default "localhost" }}:{{ .KAFKA_SERVER_PORT | default "9092" }}
