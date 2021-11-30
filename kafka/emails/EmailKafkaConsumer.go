@@ -38,9 +38,9 @@ func NewEmailKafkaConsumer(configuration *config.KafkaServerConfig) *EmailKafkaC
 func (r *EmailKafkaConsumer) consumeEmails() {
 	for {
 		m, err := r.kafkaReader.ReadMessage(context.Background())
-		if err != nil {
+		for err != nil {
 			logrus.Errorf("Break consumer, cannot read message %e", err)
-			break
+			m, err = r.kafkaReader.ReadMessage(context.Background())
 		}
 		r.mutex.Lock()
 		logrus.Infof("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))

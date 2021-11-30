@@ -56,4 +56,3 @@ volumes:
 networks:
   go-ref-api:  
     name: "network-go-ref-api"
-    external: True
