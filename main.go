@@ -5,7 +5,7 @@ import (
 	"context"
 	"goapi/config"
 	"goapi/database"
-	_ "goapi/docs/resourcedocument"
+	_ "goapi/docs/apis"
 	"goapi/kafka"
 	"goapi/repositories/repodocuments"
 	"goapi/resources/documents"
@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"text/template"
 	"time"
 
@@ -51,19 +50,29 @@ func retrieveConfig() (*config.Config, error) {
 	//that's a pain in the ass, but the yaml module spec do not include the handling of env vars
 	//so use go template module to parse the yaml configuration file, and inject the variable values
 	data := struct {
-		MONGO_SERVER_HOST string
-		MONGO_SERVER_PORT string
-		STORAGE_MEMORY    string
-		EMAIL_CONSUMERS   string
-		KAFKA_SERVER_HOST string
-		KAFKA_SERVER_PORT string
+		MONGO_SERVER_HOST     string
+		MONGO_SERVER_PORT     string
+		STORAGE_MEMORY        string
+		EMAIL_CONSUMERS       string
+		KAFKA_SERVER_HOST     string
+		KAFKA_SERVER_PORT     string
+		EMAIL_SERVER_HOST     string
+		EMAIL_SERVER_PORT     string
+		EMAIL_SERVER_USERNAME string
+		EMAIL_SERVER_PASSWORD string
+		EMAIL_SERVER_STARTTLS string
 	}{
-		MONGO_SERVER_HOST: os.Getenv("MONGO_SERVER_HOST"),
-		MONGO_SERVER_PORT: os.Getenv("MONGO_SERVER_PORT"),
-		STORAGE_MEMORY:    os.Getenv("STORAGE_MEMORY"),
-		EMAIL_CONSUMERS:   os.Getenv("EMAIL_CONSUMERS"),
-		KAFKA_SERVER_HOST: os.Getenv("KAFKA_SERVER_HOST"),
-		KAFKA_SERVER_PORT: os.Getenv("KAFKA_SERVER_PORT"),
+		MONGO_SERVER_HOST:     os.Getenv("MONGO_SERVER_HOST"),
+		MONGO_SERVER_PORT:     os.Getenv("MONGO_SERVER_PORT"),
+		STORAGE_MEMORY:        os.Getenv("STORAGE_MEMORY"),
+		EMAIL_CONSUMERS:       os.Getenv("EMAIL_CONSUMERS"),
+		KAFKA_SERVER_HOST:     os.Getenv("KAFKA_SERVER_HOST"),
+		KAFKA_SERVER_PORT:     os.Getenv("KAFKA_SERVER_PORT"),
+		EMAIL_SERVER_HOST:     os.Getenv("EMAIL_SERVER_HOST"),
+		EMAIL_SERVER_PORT:     os.Getenv("EMAIL_SERVER_PORT"),
+		EMAIL_SERVER_USERNAME: os.Getenv("EMAIL_SERVER_USERNAME"),
+		EMAIL_SERVER_PASSWORD: os.Getenv("EMAIL_SERVER_PASSWORD"),
+		EMAIL_SERVER_STARTTLS: os.Getenv("EMAIL_SERVER_STARTTLS"),
 	}
 
 	fileData, _ := ioutil.ReadFile("config.yml")
@@ -114,7 +123,7 @@ func main() {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Info("Shutting down server...")
 
@@ -136,13 +145,12 @@ func startEveryThing(configuration *config.Config) {
 		database.GetMongoDatabaseHandler().TryOrRetryCreateConnection(&configuration.DbConfig)
 	}
 	//start consumers
-	kafka.GetInstanceKafkaConsumers(&configuration.KafkaConfig).StartConsumers(1, kafka.EmailConsumer)
-
+	kafka.GetInstanceKafkaConsumers(configuration).StartConsumers(configuration.EmailConsumers, kafka.EmailConsumer)
 }
 
 func stopEveryThing(configuration *config.Config) {
 	//stop consumers
-	kafka.GetInstanceKafkaConsumers(&configuration.KafkaConfig).StopConsumers(configuration.EmailConsumers, kafka.EmailConsumer)
+	kafka.GetInstanceKafkaConsumers(configuration).StopConsumers(configuration.EmailConsumers, kafka.EmailConsumer)
 	//stop DB client
 	if !configuration.StorageInMemory {
 		database.GetMongoDatabaseHandler().Close()

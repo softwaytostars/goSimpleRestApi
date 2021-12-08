@@ -16,16 +16,16 @@ const (
 )
 
 type KafkaConsumers struct {
-	kafkaConfig *config.KafkaServerConfig
-	consumers   map[TypeConsumer][]Consumer
+	config    *config.Config
+	consumers map[TypeConsumer][]Consumer
 }
 
 var instance *KafkaConsumers
 var once sync.Once
 
-func GetInstanceKafkaConsumers(kafkaConfig *config.KafkaServerConfig) *KafkaConsumers {
+func GetInstanceKafkaConsumers(config *config.Config) *KafkaConsumers {
 	once.Do(func() {
-		instance = &KafkaConsumers{kafkaConfig: kafkaConfig, consumers: make(map[TypeConsumer][]Consumer)}
+		instance = &KafkaConsumers{config: config, consumers: make(map[TypeConsumer][]Consumer)}
 	})
 	return instance
 }
@@ -34,7 +34,7 @@ func (c *KafkaConsumers) StartConsumers(n int, consumerType TypeConsumer) {
 	for i := 0; i < n; i++ {
 		switch consumerType {
 		case EmailConsumer:
-			c.consumers[EmailConsumer] = append(c.consumers[EmailConsumer], emails.NewEmailKafkaConsumer(c.kafkaConfig))
+			c.consumers[EmailConsumer] = append(c.consumers[EmailConsumer], emails.NewEmailKafkaConsumer(&c.config.KafkaConfig, &c.config.EmailServerConfig))
 		default:
 			logrus.Error("Not supported consumer type")
 		}

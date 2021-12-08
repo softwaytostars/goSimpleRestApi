@@ -1,7 +1,9 @@
 package emails
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"goapi/config"
 
 	"github.com/segmentio/kafka-go"
@@ -27,21 +29,21 @@ func (p *EmailKafkaProducer) Close() {
 	}
 }
 
-func (p *EmailKafkaProducer) ProduceEmails() {
-	err := p.kafkaWriter.WriteMessages(context.Background(),
+func (p *EmailKafkaProducer) ProduceEmails(email EmailMessage) error {
+	reqBodyBytes := new(bytes.Buffer)
+	err := json.NewEncoder(reqBodyBytes).Encode(email)
+	if err != nil {
+		logrus.Error("Cannot encode struct to bytes")
+		return err
+	}
+
+	err = p.kafkaWriter.WriteMessages(context.Background(),
 		kafka.Message{
-			Key:   []byte("Key1"),
-			Value: []byte("one!"),
-		},
-		kafka.Message{
-			Key:   []byte("Key2"),
-			Value: []byte("two!"),
-		},
-		kafka.Message{
-			Key:   []byte("Key3"),
-			Value: []byte("three!"),
+			Key:   []byte("KeyEmails"),
+			Value: reqBodyBytes.Bytes(),
 		})
 	if err != nil {
 		logrus.Error(err)
 	}
+	return err
 }
