@@ -4,4 +4,13 @@ database:
   uri: mongodb://{{ .MONGO_SERVER_HOST | default "localhost" }}:{{ .MONGO_SERVER_PORT | default "27017" }}
   dbname: db-simple-test
   maxPoolSize: 5
-storageInMemory: {{ .STORAGE_MEMORY | default "false" }}
+storageInMemory: {{ .STORAGE_MEMORY | default "true" }}
+nEmailConsumers: {{ .EMAIL_CONSUMERS | default "0" }}
+kafkaServer: 
+  uri: {{ .KAFKA_SERVER_HOST | default "localhost" }}:{{ .KAFKA_SERVER_PORT | default "9092" }}
+emailServer:
+  host: {{ .EMAIL_SERVER_HOST | default "localhost" }}  
+  port: {{ .EMAIL_SERVER_PORT | default "1025" }}  
+  username: {{ .EMAIL_SERVER_USERNAME | default "user" }}
+  password: {{ .EMAIL_SERVER_PASSWORD | default "pass" }}
+  useStartTLS: {{ .EMAIL_SERVER_STARTTLS| default "false" }}
