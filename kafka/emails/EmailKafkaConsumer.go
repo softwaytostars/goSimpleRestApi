@@ -50,20 +50,19 @@ func (r *EmailKafkaConsumer) readMessage() (*kafka.Message, error) {
 }
 func (r *EmailKafkaConsumer) consumeEmails() {
 	for {
-		m, _ := r.readMessage()
 		r.mutex.RLock()
-		defer r.mutex.RUnlock()
-
+		m, _ := r.readMessage()
 		//logrus.Infof("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		var email EmailMessage
 		if err := json.Unmarshal(m.Value, &email); err != nil {
-			logrus.Error("Cannot Unmarshal email %s", err)
+			logrus.New().Errorf("Cannot Unmarshal email %s", err)
 		}
 
 		logrus.Info("[EmailKafkaConsumer] Sending email")
 		err := r.emailSender.Send(&email)
 		if err != nil {
-			logrus.Error("[EmailKafkaConsumer] Cannot send email %s", err)
+			logrus.Errorf("[EmailKafkaConsumer] Cannot send email %s", err)
 		}
+		r.mutex.RUnlock()
 	}
 }
