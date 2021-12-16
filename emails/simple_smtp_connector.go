@@ -11,29 +11,29 @@ import (
 */
 type SimpleSmtpConnectorImpl struct {
 	mutex           sync.Mutex
-	errorConnect    bool
-	errorDisconnect bool
-	isConnected     bool
-	nSent           int
+	ErrorConnect    bool
+	ErrorDisconnect bool
+	IsConnected     bool
+	NSent           int
 }
 
 func (s *SimpleSmtpConnectorImpl) ConnectionIsOpen() bool {
-	return s.isConnected
+	return s.IsConnected
 }
 
 func (s *SimpleSmtpConnectorImpl) Connect() error {
-	if s.errorConnect {
-		return errors.New("Cannot connect")
+	if s.ErrorConnect {
+		return errors.New("cannot connect")
 	}
-	s.isConnected = true
+	s.IsConnected = true
 	return nil
 }
 
 func (s *SimpleSmtpConnectorImpl) Disconnect() error {
-	if s.errorDisconnect {
-		return errors.New("Cannot connect")
+	if s.ErrorDisconnect {
+		return errors.New("cannot connect")
 	}
-	s.isConnected = false
+	s.IsConnected = false
 	return nil
 }
 
@@ -43,10 +43,10 @@ func (s *SimpleSmtpConnectorImpl) Send(m *EmailMessage) error {
 	defer s.mutex.Unlock()
 
 	time.Sleep(30 * time.Millisecond)
-	if !s.isConnected {
-		return errors.New("Cannot send")
+	if !s.IsConnected {
+		return errors.New("cannot send")
 	}
 
-	s.nSent++
+	s.NSent++
 	return nil
 }

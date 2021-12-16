@@ -1,9 +1,10 @@
-package emails
+package kafka
 
 import (
 	"context"
 	"encoding/json"
 	"goapi/config"
+	"goapi/emails"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,8 @@ import (
 
 type EmailKafkaConsumer struct {
 	kafkaReader *kafka.Reader
-	emailSender *EmailSender
-	Observers   []IObserverEmailSent
+	emailSender *emails.EmailSender
+	Observers   []emails.IObserverEmailSent
 }
 
 func (r *EmailKafkaConsumer) CloseConsumer() {
@@ -23,12 +24,12 @@ func (r *EmailKafkaConsumer) CloseConsumer() {
 }
 
 func NewEmailKafkaConsumer(configKafka *config.KafkaServerConfig, configEmailServer *config.EmailServerConfig) *EmailKafkaConsumer {
-	consumer := NewEmailKafkaConsumerWithEmailSender(configKafka, NewEmailSender(configEmailServer))
+	consumer := NewEmailKafkaConsumerWithEmailSender(configKafka, emails.NewEmailSender(configEmailServer))
 	consumer.ConsumeEmails()
 	return consumer
 }
 
-func NewEmailKafkaConsumerWithEmailSender(configKafka *config.KafkaServerConfig, emailSender *EmailSender) *EmailKafkaConsumer {
+func NewEmailKafkaConsumerWithEmailSender(configKafka *config.KafkaServerConfig, emailSender *emails.EmailSender) *EmailKafkaConsumer {
 	kafkaReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{configKafka.Uri},
 		GroupID:  "consumer-group-emails",
@@ -44,7 +45,7 @@ func NewEmailKafkaConsumerWithEmailSender(configKafka *config.KafkaServerConfig,
 	return &emailConsumer
 }
 
-func (r *EmailKafkaConsumer) AddObserver(observer IObserverEmailSent) {
+func (r *EmailKafkaConsumer) AddObserver(observer emails.IObserverEmailSent) {
 	r.Observers = append(r.Observers, observer)
 }
 
@@ -83,7 +84,7 @@ func (r *EmailKafkaConsumer) readMessages() error {
 		return err
 	}
 	//logrus.Infof("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-	var email EmailMessage
+	var email emails.EmailMessage
 	if err = json.Unmarshal(m.Value, &email); err != nil {
 		logrus.New().Errorf("Cannot Unmarshal email %s", err)
 		return err

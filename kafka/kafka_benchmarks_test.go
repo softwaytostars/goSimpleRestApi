@@ -1,8 +1,9 @@
-package emails
+package kafka
 
 import (
 	"fmt"
 	"goapi/config"
+	"goapi/emails"
 	"os"
 	"testing"
 	"time"
@@ -23,8 +24,12 @@ func getKafkaServerUri() string {
 */
 
 func createKafkaConsumer() *EmailKafkaConsumer {
-	connectorMock := &SimpleSmtpConnectorImpl{errorConnect: false, errorDisconnect: false, isConnected: false, nSent: 0}
-	emailsender := NewEmailSenderWithConnector(10, connectorMock)
+	connectorMock := &emails.SimpleSmtpConnectorImpl{
+		ErrorConnect:    false,
+		ErrorDisconnect: false,
+		IsConnected:     false,
+		NSent:           0}
+	emailsender := emails.NewEmailSenderWithConnector(10, connectorMock)
 	return NewEmailKafkaConsumerWithEmailSender(&config.KafkaServerConfig{Uri: getKafkaServerUri()}, emailsender)
 }
 
@@ -62,7 +67,7 @@ func Benchmark_KafkaUse(b *testing.B) {
 
 		observer.currentSent = 0
 		for n := 0; n < b.N; n++ {
-			kafkaProducer.ProduceEmails(EmailMessage{From: "from"})
+			kafkaProducer.ProduceEmails(emails.EmailMessage{From: "from"})
 		}
 
 		select {

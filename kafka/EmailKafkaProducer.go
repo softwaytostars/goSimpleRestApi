@@ -1,10 +1,11 @@
-package emails
+package kafka
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"goapi/config"
+	"goapi/emails"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ func (p *EmailKafkaProducer) Close() {
 	}
 }
 
-func (p *EmailKafkaProducer) ProduceEmails(email EmailMessage) error {
+func (p *EmailKafkaProducer) ProduceEmails(email emails.EmailMessage) error {
 	reqBodyBytes := new(bytes.Buffer)
 	err := json.NewEncoder(reqBodyBytes).Encode(email)
 	if err != nil {

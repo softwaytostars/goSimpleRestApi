@@ -37,7 +37,7 @@ func BenchmarkSendEmails(b *testing.B) {
 	concurrencyLevels := []int{5, 50} //same time for benchmarks if lock mutex but faster if Read lock mutex in send (Send should not write then it's ok)
 	for _, nconcurrent := range concurrencyLevels {
 		b.Run(fmt.Sprintf("%d_clients", nconcurrent), func(b *testing.B) {
-			connectorMock := &SimpleSmtpConnectorImpl{errorConnect: false, errorDisconnect: false, isConnected: false, nSent: 0}
+			connectorMock := &SimpleSmtpConnectorImpl{ErrorConnect: false, ErrorDisconnect: false, IsConnected: false, NSent: 0}
 			emailsender := NewEmailSenderWithConnector(10, connectorMock)
 			ch := make(chan struct{}, nconcurrent) //channel for limiting the number of concurrent jobs to nconcurrent
 			wg := sync.WaitGroup{}
@@ -71,7 +71,7 @@ func BenchmarkSendEmailsUseCaseKafka(b *testing.B) {
 			for n := 0; n < nconcurrent; n++ {
 				wg.Add(1)
 				go func() {
-					connectorMock := &SimpleSmtpConnectorImpl{errorConnect: false, errorDisconnect: false, isConnected: false, nSent: 0}
+					connectorMock := &SimpleSmtpConnectorImpl{ErrorConnect: false, ErrorDisconnect: false, IsConnected: false, NSent: 0}
 					emailsender := NewEmailSenderWithConnector(10, connectorMock)
 					for n := 0; n < b.N; n++ {
 						err := emailsender.Send(&EmailMessage{})
