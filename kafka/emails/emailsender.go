@@ -11,15 +11,23 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type EmailSender struct {
-	mutex        sync.RWMutex
-	channel      chan bool
+type SmtpConnector interface {
+	ConnectionIsOpen() bool
+	Connect() error
+	Disconnect() error
+	Send(m *EmailMessage) error
+}
+
+type DefaultSmtpConnectorImpl struct {
 	dialer       *gomail.Dialer
 	senderCloser gomail.SendCloser
 }
 
-func NewEmailSender(config *config.EmailServerConfig) *EmailSender {
-	ch := make(chan bool)
+func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+}
+
+func NewDefaultSmtpConnectorImpl(config *config.EmailServerConfig) *DefaultSmtpConnectorImpl {
 	var dialer *gomail.Dialer
 	if config.UseStartTLS {
 		dialer = gomail.NewDialer(config.Host, config.Port, config.Username, config.Password)
@@ -33,71 +41,37 @@ func NewEmailSender(config *config.EmailServerConfig) *EmailSender {
 			SSL:       false,
 		}
 	}
-
-	emailSender := EmailSender{channel: ch, dialer: dialer}
-	emailSender.run_daemon()
-	return &emailSender
+	return &DefaultSmtpConnectorImpl{dialer: dialer}
 }
 
-func (s *EmailSender) Close() {
-	close(s.channel)    //close the deamon
-	s.closeConnection() // close the connection
+func (c *DefaultSmtpConnectorImpl) ConnectionIsOpen() bool {
+	return c.senderCloser != nil
 }
 
-func (s *EmailSender) closeConnection() {
-	if s.senderCloser == nil {
-		return
-	}
-	//prevent to close while someone is sending
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+func (c *DefaultSmtpConnectorImpl) Connect() error {
 
-	logrus.Info("Closing connection to stmp server")
-	if err := s.senderCloser.Close(); err != nil {
-		logrus.Errorf("Cannot close connection to stmp server %s", err)
-	}
-	s.senderCloser = nil
-}
-
-func (s *EmailSender) openConnection() error {
-	//prevent to send while the connection is creating
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	senderCloser, err := s.dialer.Dial()
+	senderCloser, err := c.dialer.Dial()
 	if err != nil {
 		logrus.Errorf("Cannot connect to stmp server %s", err)
 	}
-	s.senderCloser = senderCloser
+	c.senderCloser = senderCloser
 	return err
 }
 
-//the daemon serves to close the smtp connection if no message were sent in the time range of 30 seconds
-func (s *EmailSender) run_daemon() {
-	go func() {
-		open := s.openConnection() != nil
-		for {
-			select {
-			case _, ok := <-s.channel:
-				if !ok {
-					return
-				}
-				if !open {
-					open = s.openConnection() != nil
-				}
-
-				// Close the connection to the SMTP server if no email was sent in
-				// the last 30 seconds.
-			case <-time.After(30 * time.Second):
-				s.closeConnection()
-				open = false
-			}
-		}
-
-	}()
+func (c *DefaultSmtpConnectorImpl) Disconnect() error {
+	if c.senderCloser == nil {
+		return nil
+	}
+	logrus.Info("Closing connection to stmp server")
+	if err := c.senderCloser.Close(); err != nil {
+		logrus.Errorf("Cannot close connection to stmp server %s", err)
+		return err
+	}
+	c.senderCloser = nil
+	return nil
 }
 
-func (s *EmailSender) Send(m *EmailMessage) error {
+func (c *DefaultSmtpConnectorImpl) Send(m *EmailMessage) error {
 	email := gomail.NewMessage()
 	email.SetHeader("From", m.From)
 	email.SetHeader("To", m.To...)
@@ -118,21 +92,107 @@ func (s *EmailSender) Send(m *EmailMessage) error {
 			return err
 		}))
 	}
+	return gomail.Send(c.senderCloser, email)
+}
 
-	//tell the daemon we are sending a message
-	s.channel <- true
-	//open the connection if not already open
-	if s.senderCloser == nil {
-		err := s.openConnection()
-		if err != nil {
-			return err
-		}
-	}
+type EmailSender struct {
+	mutex         sync.RWMutex
+	channel       chan struct{}
+	connector     SmtpConnector
+	timeoutIdleMs int
+}
 
-	//deamon cannot close connection while the email is sent
+func NewEmailSenderWithConnector(timeoutIdleMs int, connector SmtpConnector) *EmailSender {
+	emailSender := EmailSender{
+		channel:       make(chan struct{}, 1),
+		connector:     connector,
+		timeoutIdleMs: timeoutIdleMs}
+
+	//launch the daemon
+	emailSender.run_daemon()
+
+	return &emailSender
+}
+
+func NewEmailSender(config *config.EmailServerConfig) *EmailSender {
+	return NewEmailSenderWithConnector(config.TimeoutIdleConnectionMs, NewDefaultSmtpConnectorImpl(config))
+}
+
+func (s *EmailSender) Close() {
+	close(s.channel)    //close the deamon
+	s.closeConnection() // close the connection
+}
+
+func (s *EmailSender) closeConnection() error {
+	//prevent to close while someone is sending
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.connector.Disconnect()
+}
+
+func (s *EmailSender) openConnection() error {
+	//prevent to send while the connection is creating
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.connector.Connect()
+}
+
+func (s *EmailSender) ConnectionIsOpen() bool {
+	//prevent to send while the connection is creating
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	//send the email
-	return gomail.Send(s.senderCloser, email)
+	return s.connector.ConnectionIsOpen()
+}
+
+//the daemon serves to close the smtp connection if no message were sent in the time range of 30 seconds
+func (s *EmailSender) run_daemon() {
+	go func() {
+
+		if !s.ConnectionIsOpen() {
+			s.openConnection()
+		}
+
+		for {
+
+			select {
+			case _, ok := <-s.channel:
+				if !ok {
+					return
+				}
+				if !s.ConnectionIsOpen() {
+					s.openConnection()
+				}
+
+			// Close the connection to the SMTP server if no email was sent in
+			// the last timeoutIdleMs.
+			case <-time.After(time.Duration(s.timeoutIdleMs) * time.Millisecond):
+				if s.ConnectionIsOpen() {
+					s.closeConnection()
+				}
+			}
+		}
+
+	}()
+}
+
+func (s *EmailSender) Send(m *EmailMessage) error {
+
+	go func() {
+		//tell the daemon we are sending a message
+		s.channel <- struct{}{}
+	}()
+
+	//the lock in openConnection must be taken from another go routine or oustide the lock in this go routine
+	if !s.ConnectionIsOpen() {
+		s.openConnection()
+	}
+
+	//daemon cannot close connection while the email is sent
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return s.connector.Send(m)
 }

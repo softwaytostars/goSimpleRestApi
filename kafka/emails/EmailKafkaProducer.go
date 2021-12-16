@@ -43,7 +43,9 @@ func (p *EmailKafkaProducer) ProduceEmails(email EmailMessage) error {
 			Value: reqBodyBytes.Bytes(),
 		})
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("[EmailKafkaProducer]%s", err)
+		return err
 	}
-	return err
+	logrus.Debug("message written")
+	return nil
 }

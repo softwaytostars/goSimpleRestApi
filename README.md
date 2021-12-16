@@ -95,6 +95,19 @@ The pipeline is run under gitlabci and the .gitlabci.yml is its configuration fi
 See gitlab/README.md
 There is also the .github/go.yml that permit to run the unit tests once the branch is pushed on github.
 
+
+## Benchmarks
+
+Some benchmarks tests need the kafka server to be run (broker_benchmarks_test.go) ),
+so run 
+
+`docker-compose up --scale api-server=0`
+
+Then
+
+`go test -race -run=XXX -bench=. ./... -benchtime=10s`
+
+
 ## Some call examples:
 
 ### Add documents

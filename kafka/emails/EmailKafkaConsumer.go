@@ -4,65 +4,97 @@ import (
 	"context"
 	"encoding/json"
 	"goapi/config"
-	"sync"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
 
 type EmailKafkaConsumer struct {
-	mutex       sync.RWMutex //use mutex so that to not interrupt any consuming process in progress if close command is called
 	kafkaReader *kafka.Reader
 	emailSender *EmailSender
+	Observers   []IObserverEmailSent
 }
 
 func (r *EmailKafkaConsumer) CloseConsumer() {
-	r.mutex.Lock()
-
 	if err := r.kafkaReader.Close(); err != nil {
 		logrus.Error("failed to close writer:", err)
 	}
 	r.emailSender.Close()
-
-	r.mutex.Unlock()
 }
 
 func NewEmailKafkaConsumer(configKafka *config.KafkaServerConfig, configEmailServer *config.EmailServerConfig) *EmailKafkaConsumer {
+	consumer := NewEmailKafkaConsumerWithEmailSender(configKafka, NewEmailSender(configEmailServer))
+	consumer.ConsumeEmails()
+	return consumer
+}
+
+func NewEmailKafkaConsumerWithEmailSender(configKafka *config.KafkaServerConfig, emailSender *EmailSender) *EmailKafkaConsumer {
 	kafkaReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{configKafka.Uri},
 		GroupID:  "consumer-group-emails",
 		Topic:    emailTopic,
-		MinBytes: 10e3, // 10KB
+		MinBytes: 0,    // 1B
 		MaxBytes: 10e6, // 10MB
 	})
-	emailConsumer := EmailKafkaConsumer{kafkaReader: kafkaReader, emailSender: NewEmailSender(configEmailServer)}
-	go emailConsumer.consumeEmails() //start consuming as soon as created
+	emailConsumer := EmailKafkaConsumer{
+		kafkaReader: kafkaReader,
+		emailSender: emailSender,
+	}
+
 	return &emailConsumer
+}
+
+func (r *EmailKafkaConsumer) AddObserver(observer IObserverEmailSent) {
+	r.Observers = append(r.Observers, observer)
+}
+
+func (r *EmailKafkaConsumer) notifyObservers() {
+	for _, v := range r.Observers {
+		v.OnEmailSent()
+	}
 }
 
 func (r *EmailKafkaConsumer) readMessage() (*kafka.Message, error) {
 	m, err := r.kafkaReader.ReadMessage(context.Background())
-	for err != nil {
-		logrus.Errorf("Break consumer, cannot read message %e, Will retry", err)
-		m, err = r.kafkaReader.ReadMessage(context.Background())
-	}
+	/*
+		for err != nil {
+			logrus.Errorf("Break consumer, cannot read message %e, Will retry", err)
+			m, err = r.kafkaReader.ReadMessage(context.Background())
+		}
+	*/
 	return &m, err
 }
-func (r *EmailKafkaConsumer) consumeEmails() {
-	for {
-		r.mutex.RLock()
-		m, _ := r.readMessage()
-		//logrus.Infof("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-		var email EmailMessage
-		if err := json.Unmarshal(m.Value, &email); err != nil {
-			logrus.New().Errorf("Cannot Unmarshal email %s", err)
+func (r *EmailKafkaConsumer) ConsumeEmails() {
+	go func() {
+		for {
+			err := r.readMessages()
+			if err != nil {
+				//logrus.Errorf("Consumer is stopping to fetch messages %s", err)
+				return
+			}
 		}
+	}()
+}
 
-		logrus.Info("[EmailKafkaConsumer] Sending email")
-		err := r.emailSender.Send(&email)
-		if err != nil {
-			logrus.Errorf("[EmailKafkaConsumer] Cannot send email %s", err)
-		}
-		r.mutex.RUnlock()
+func (r *EmailKafkaConsumer) readMessages() error {
+	m, err := r.readMessage()
+	if err != nil {
+		//logrus.Errorf("[EmailKafkaConsumer] readMessage %s", err)
+		return err
 	}
+	//logrus.Infof("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+	var email EmailMessage
+	if err = json.Unmarshal(m.Value, &email); err != nil {
+		logrus.New().Errorf("Cannot Unmarshal email %s", err)
+		return err
+	}
+
+	logrus.Info("[EmailKafkaConsumer] Sending email")
+	err = r.emailSender.Send(&email)
+	if err != nil {
+		logrus.Errorf("[EmailKafkaConsumer] Cannot send email %s", err)
+	} else {
+		r.notifyObservers()
+	}
+	return err
 }
