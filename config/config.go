@@ -7,11 +7,12 @@ type DatabaseConfig struct {
 }
 
 type EmailServerConfig struct {
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	UseStartTLS bool   `yaml:"useStartTLS"`
+	Host                    string `yaml:"host"`
+	Port                    int    `yaml:"port"`
+	Username                string `yaml:"username"`
+	Password                string `yaml:"password"`
+	UseStartTLS             bool   `yaml:"useStartTLS"`
+	TimeoutIdleConnectionMs int    `yaml:"timeoutIdleMs"`
 }
 
 type KafkaServerConfig struct {

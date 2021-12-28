@@ -1,4 +1,4 @@
-package kafka
+package emails
 
 type Consumer interface {
 	CloseConsumer()

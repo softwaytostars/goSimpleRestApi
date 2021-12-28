@@ -32,6 +32,16 @@ services:
     restart: always
     networks:
       go-ref-api:
+    
+  
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      go-ref-api:
 
   maildev:
     image: maildev/maildev:1.1.0

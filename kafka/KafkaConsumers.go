@@ -2,7 +2,7 @@ package kafka
 
 import (
 	"goapi/config"
-	"goapi/kafka/emails"
+	"goapi/emails"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +17,7 @@ const (
 
 type KafkaConsumers struct {
 	config    *config.Config
-	consumers map[TypeConsumer][]Consumer
+	consumers map[TypeConsumer][]emails.Consumer
 }
 
 var instance *KafkaConsumers
@@ -25,7 +25,7 @@ var once sync.Once
 
 func GetInstanceKafkaConsumers(config *config.Config) *KafkaConsumers {
 	once.Do(func() {
-		instance = &KafkaConsumers{config: config, consumers: make(map[TypeConsumer][]Consumer)}
+		instance = &KafkaConsumers{config: config, consumers: make(map[TypeConsumer][]emails.Consumer)}
 	})
 	return instance
 }
@@ -34,14 +34,14 @@ func (c *KafkaConsumers) StartConsumers(n int, consumerType TypeConsumer) {
 	for i := 0; i < n; i++ {
 		switch consumerType {
 		case EmailConsumer:
-			c.consumers[EmailConsumer] = append(c.consumers[EmailConsumer], emails.NewEmailKafkaConsumer(&c.config.KafkaConfig, &c.config.EmailServerConfig))
+			c.consumers[EmailConsumer] = append(c.consumers[EmailConsumer], NewEmailKafkaConsumer(&c.config.KafkaConfig, &c.config.EmailServerConfig))
 		default:
 			logrus.Error("Not supported consumer type")
 		}
 	}
 }
 
-func (c *KafkaConsumers) retrieveListOfConsumers(consumerType TypeConsumer) []Consumer {
+func (c *KafkaConsumers) retrieveListOfConsumers(consumerType TypeConsumer) []emails.Consumer {
 	switch consumerType {
 	case EmailConsumer:
 		return c.consumers[EmailConsumer]

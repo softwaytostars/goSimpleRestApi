@@ -14,3 +14,4 @@ emailServer:
   username: {{ .EMAIL_SERVER_USERNAME | default "user" }}
   password: {{ .EMAIL_SERVER_PASSWORD | default "pass" }}
   useStartTLS: {{ .EMAIL_SERVER_STARTTLS| default "false" }}
+  timeoutIdleMs:  30000

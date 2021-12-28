@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"goapi/config"
-	"goapi/kafka/emails"
+	"goapi/emails"
+	"goapi/kafka"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 )
 
 type ResourceEmails struct {
-	emailKafkaProducer *emails.EmailKafkaProducer
+	emailKafkaProducer *kafka.EmailKafkaProducer
 }
 
 type formEmailBody struct {
@@ -79,7 +80,7 @@ func (r *ResourceEmails) sendEmail(c *gin.Context) {
 
 // RegisterHandlers register all handlers for a router
 func RegisterHandlers(r *gin.Engine, configuration *config.Config) {
-	resource := ResourceEmails{emailKafkaProducer: emails.NewEmailKafkaProducer(&configuration.KafkaConfig)}
+	resource := ResourceEmails{emailKafkaProducer: kafka.NewEmailKafkaProducer(&configuration.KafkaConfig)}
 
 	r.POST("/emails", resource.sendEmail)
 }
