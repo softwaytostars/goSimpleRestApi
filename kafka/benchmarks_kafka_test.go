@@ -1,14 +1,11 @@
 package kafka
 
 import (
-	"fmt"
 	"goapi/config"
 	"goapi/emails"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 func getKafkaServerUri() string {
@@ -41,10 +38,10 @@ type TestObserverEmail struct {
 func (o *TestObserverEmail) OnEmailSent() {
 	o.currentSent++
 	o.Sent <- o.currentSent
-	logrus.Infof("Sent %d", o.currentSent)
+	//logrus.Infof("Sent %d", o.currentSent)
 }
 
-func Benchmark_KafkaUse(b *testing.B) {
+func BenchmarkKafkaUse(b *testing.B) {
 
 	kafkaProducer := NewEmailKafkaProducer(&config.KafkaServerConfig{Uri: getKafkaServerUri()})
 
@@ -59,29 +56,12 @@ func Benchmark_KafkaUse(b *testing.B) {
 		consumer.AddObserver(&observer)
 		consumer.ConsumeEmails()
 	}
+	for n := 0; n < b.N; n++ {
+		kafkaProducer.ProduceEmails(emails.EmailMessage{From: "from"})
+	}
 
-	//kafka takes time to get ready, just make sure it is
-	time.Sleep(10 * time.Millisecond)
+	loopWaitAllEvents(b, &observer)
 
-	b.Run(fmt.Sprintf("%d_nMessages", 0), func(b *testing.B) {
-
-		observer.currentSent = 0
-		for n := 0; n < b.N; n++ {
-			kafkaProducer.ProduceEmails(emails.EmailMessage{From: "from"})
-		}
-
-		select {
-		case current, ok := <-observer.Sent:
-			if !ok {
-				break
-			}
-			if current == b.N {
-				break
-			}
-		case <-time.After(60 * time.Second):
-			break
-		}
-	})
 	go func() {
 		for _, v := range kafkaConsumers {
 			v.CloseConsumer()
@@ -89,4 +69,20 @@ func Benchmark_KafkaUse(b *testing.B) {
 		kafkaProducer.Close()
 	}()
 	close(observer.Sent)
+}
+
+func loopWaitAllEvents(b *testing.B, observer *TestObserverEmail) {
+	for {
+		select {
+		case current, ok := <-observer.Sent:
+			if !ok {
+				break
+			}
+			if current == b.N {
+				return
+			}
+		case <-time.After(60 * time.Second):
+			return
+		}
+	}
 }

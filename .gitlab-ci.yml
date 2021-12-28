@@ -35,4 +35,5 @@ behavior-benchmark-test-job:
     - docker-compose down -v
     # run benchmarks tests against kafka server
     - docker-compose up --scale api-server=0 -d
-    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; KAFKA_URI=kafka:9092 go test -race -run=XXX -bench=. ./... -benchtime=20s"
+    - docker run --network network-go-ref-api -v "$(pwd)":/bt  -w /bt golang:alpine /bin/sh -c "apk add build-base; KAFKA_URI=kafka:9092; RABBITMQ_URI=rabbitmq:5672 go test -race -run=XXX -bench=. ./... -benchtime=20s"
+    - docker-compose down

@@ -107,6 +107,9 @@ Then
 
 `go test -race -run=XXX -bench=. ./... -benchtime=10s`
 
+If we want to run a bencharmk test only : 
+`go test -race -run=XXX -bench=Benchmark_RabbitMqUse ./... -benchtime=10s` 
+
 
 ## Some call examples:
 

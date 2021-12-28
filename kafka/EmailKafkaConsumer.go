@@ -90,7 +90,7 @@ func (r *EmailKafkaConsumer) readMessages() error {
 		return err
 	}
 
-	logrus.Info("[EmailKafkaConsumer] Sending email")
+	//logrus.Info("[EmailKafkaConsumer] Sending email")
 	err = r.emailSender.Send(&email)
 	if err != nil {
 		logrus.Errorf("[EmailKafkaConsumer] Cannot send email %s", err)

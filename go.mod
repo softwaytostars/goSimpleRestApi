@@ -7,6 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-co-op/gocron v1.9.0
 	github.com/leekchan/gtf v0.0.0-20190214083521-5fba33c5b00b
+	github.com/rabbitmq/amqp091-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.25
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.7.2
